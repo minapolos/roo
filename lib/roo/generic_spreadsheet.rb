@@ -533,7 +533,7 @@ class GenericSpreadsheet
     ret=nil
     if zip.file.file? path
       # extract and return filename
-      @tmpdir = "oo_"+$$.to_s
+      @tmpdir = "#{RAILS_ROOT}/tmp/oo_"+$$.to_s
       unless File.exists?(@tmpdir)
         FileUtils::mkdir(@tmpdir)
       end

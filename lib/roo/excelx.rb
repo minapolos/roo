@@ -82,7 +82,7 @@ class Excelx < GenericSpreadsheet
   def initialize(filename, packed=nil, file_warning = :error) #, create = false)
     super()
     @file_warning = file_warning
-    @tmpdir = "oo_"+$$.to_s
+    @tmpdir = "#{RAILS_ROOT}/tmp/oo_"+$$.to_s
     @tmpdir = File.join(ENV['ROO_TMP'], @tmpdir) if ENV['ROO_TMP'] 
     unless File.exists?(@tmpdir)
       FileUtils::mkdir(@tmpdir)

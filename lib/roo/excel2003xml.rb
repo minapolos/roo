@@ -14,7 +14,7 @@ class Excel2003XML < GenericSpreadsheet
   def initialize(filename, packed=nil, file_warning=:error) 
     @file_warning = file_warning
     super()
-    @tmpdir = "oo_"+$$.to_s
+    @tmpdir = "#{RAILS_ROOT}/tmp/oo_"+$$.to_s
     @tmpdir = File.join(ENV['ROO_TMP'], @tmpdir) if ENV['ROO_TMP'] 
     unless File.exists?(@tmpdir)
       FileUtils::mkdir(@tmpdir)
