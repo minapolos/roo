@@ -1,3 +1,23 @@
+== 1.9.2 2009-?????
+
+* 1 bugfix
+  * double quoting of '"' fixed
+
+== 1.9.1 2009-11-10
+
+* 2 bugfixes
+  * syntax in nokogiri methods
+  * missing dependency ...rubyzip
+
+== 1.9.0 2009-10-29
+
+* 4 enhancements
+  * Ruby 1.9 compatible
+  * oo.aa42 as a shortcut of oo.cell('aa',42)
+  * oo.aa42('sheet1') as a shortcut of oo.cell('aa',42,'sheet1')
+  * oo.anton as a reference to a cell labelled 'anton' (or any other label name)
+    (currently only for Openoffice spreadsheets)
+
 == 1.2.3 2009-01-04
 
 * bugfix
@@ -89,8 +109,8 @@
   * some methods common to more than one class were factored out to the GenericSpreadsheet (virtual) class
 == 0.7.0 2007-11-23
 * 6 enhancements:
-  * Openoffice/Excel: the most methods can be called with an option 'sheet' 
-    parameter which will be used instead of the default sheet 
+  * Openoffice/Excel: the most methods can be called with an option 'sheet'
+    parameter which will be used instead of the default sheet
   * Excel: improved the speed of CVS output
   * Openoffice/Excel: new method #column
   * Openoffice/Excel: new method #find
@@ -118,7 +138,7 @@
 == 0.5.1 2007-08-26
 * 4 enhancements:
   * Openoffice: Exception if an illegal sheet-name is selected
-  * Openoffice/Excel: no need to set a default_sheet if there is only one in 
+  * Openoffice/Excel: no need to set a default_sheet if there is only one in
     the document
   * Excel: can now read zip-ed files
   * Excel: can now read files from http://-URL over the net
@@ -136,7 +156,7 @@
 == 0.4.0 2007-06-27
 * 7 enhancements:
   * robustness: Exception if no default_sheet was set
-  * new method reload() implemented 
+  * new method reload() implemented
   * about 15 % more method documentation
   * optimization: huge increase of speed (no need to use fixed borders anymore)
   * added the method 'formulas' which gives you all formulas in a spreadsheet
@@ -158,7 +178,7 @@
 
 == 0.2.6 2007-06-19
 * 1 bugfix:
-  * Openoffice: two or more consecutive cells with string content failed 
+  * Openoffice: two or more consecutive cells with string content failed
 
 == 0.2.5 2007-06-17
 
@@ -188,7 +208,7 @@
 
 == 0.2.2 2007-06-01
 * 1 bugfix:
-  * incorrect dependencies fixed 
+  * incorrect dependencies fixed
 
 == 0.2.0 2007-06-01
 * 1 major enhancement:

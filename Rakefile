@@ -1,37 +1,68 @@
-$:.unshift('lib')
- 
-require 'rake/testtask'
+begin
+  require 'bones'
+rescue LoadError
+  abort '### Please install the "bones" gem ###'
+end
+
+ensure_in_path 'lib'
+require 'roo'
+
+task :default => 'test:run'
+task 'gem:release' => 'test:run'
+
+Bones {
+  name  'roo'
+  authors  'Thomas Preymesser'
+  email  'thopre@gmail.com'
+  url  'http://roo.rubyforge.org/'
+  version  Roo::VERSION
+}
+
+# EOF
+__END__
+# Look in the tasks/setup.rb file for the various options that can be
+# configured in this Rakefile. The .rake files in the tasks directory
+# are where the options are used.
 
 begin
-  require 'jeweler'
-  Jeweler::Tasks.new do |s|
-    s.name               = 'roo'
-    s.rubyforge_project  = 'roo'
-    s.platform           = Gem::Platform::RUBY
-    s.email              = 'hugh_mcgowan@yahoo.com' 
-    s.homepage           = "http://roo.rubyforge.org"
-    s.summary            = "roo"
-    s.description        = "roo can access the contents of OpenOffice-, Excel- or Google-Spreadsheets"
-    s.authors            = ['Hugh McGowan','Thomas Preymesser']
-    s.files              =  FileList[ "{lib,test}/**/*"]
-    s.has_rdoc = true
-    s.extra_rdoc_files = ["README.markdown", "History.txt"]
-    s.rdoc_options = ["--main","README.markdown"]
-    s.add_dependency "spreadsheet", [">= 0.6.4"]
-    s.add_dependency "rubyzip", [">= 0.9.1"]
-    s.add_dependency "hpricot", [">= 0.8.4"]
-    s.add_dependency "GData", [">= 0.0.4"]
-    s.add_dependency "libxml-ruby", [">= 1.1.3"]
-  end
+  require 'bones'
+#  Bones.setup
 rescue LoadError
-  puts "Jeweler not available. Install it with: sudo gem install technicalpickles-jeweler -s http://gems.github.com"
+  begin
+    load 'tasks/setup.rb'
+  rescue LoadError
+    raise RuntimeError, '### please install the "bones" gem ###'
+  end
 end
 
-Rake::TestTask.new do |t|
-  t.libs << "test"
-  t.test_files = FileList['test/test_roo.rb']
-  t.verbose = true
+ensure_in_path 'lib'
+module GData
+  class Base
+  end
 end
+require 'roo'
 
+task :default => 'spec:run'
 
-task :default => :test
+PROJ.name = 'roo'
+PROJ.authors = 'Thomas Preymesser'
+PROJ.email = 'thopre@gmail.com'
+PROJ.url = 'http://roo.rubyforge.org/'
+PROJ.version = Roo::VERSION
+PROJ.rubyforge.name = 'roo'
+PROJ.gem.dependencies = [
+  # ['xmlsimple', '>= 0.0.1'],
+  ['spreadsheet', '> 0.6.4'],
+  #--
+  # rel. 0.6.4 causes an invalid Date error if we
+  # have a datetime value of 2006-02-02 10:00:00
+  #++
+  ['nokogiri', '>= 0.0.1'],
+  ['builder', '>= 2.1.2'],
+  ['gimite-google-spreadsheet-ruby','>= 0.0.5'],
+  ['febeling-rubyzip','>= 0.9.2'], # meine aktuelle Version
+]
+
+PROJ.spec.opts << '--color'
+
+# EOF

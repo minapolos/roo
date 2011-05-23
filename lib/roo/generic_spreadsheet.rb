@@ -1,3 +1,4 @@
+# encoding: utf-8
 require 'rubygems'
 require 'builder'
 
@@ -313,7 +314,7 @@ class GenericSpreadsheet
   def info
     result = "File: #{File.basename(@filename)}\n"+
       "Number of sheets: #{sheets.size}\n"+
-      "Sheets: #{sheets.map{|sheet| sheet+", "}.to_s[0..-3]}\n"
+      "Sheets: #{sheets.join(', ')}\n"
     n = 1
     sheets.each {|sheet|
       self.default_sheet = sheet
@@ -359,6 +360,33 @@ class GenericSpreadsheet
     xml_document
   end
 
+  # when a method like spreadsheet.a42 is called
+  # convert it to a call of spreadsheet.cell('a',42)
+  def method_missing(m, *args)
+    # #aa42 => #cell('aa',42)
+    # #aa42('Sheet1')  => #cell('aa',42,'Sheet1')
+    if m =~ /^([a-z]+)(\d)$/
+      col = GenericSpreadsheet.letter_to_number($1)
+      row = $2.to_i
+      if args.size > 0
+        return cell(row,col,args[0])
+      else
+        return cell(row,col)
+      end
+#    else
+#      geht noch nicht, weil label unterhalb (in Openoffice) dieser Klasse
+#      es definiert ist
+#      p "Label #{m} angesprochen?"
+#        row,col,sheet = label('anton')
+#      # row,col,sheet = label(m)
+#      p "row: #{row}"
+#      p "col: #{col}"
+#      p "sheet: #{sheet}"
+#      return cell(row,col)
+    end
+    raise ArgumentError, "Method #{m} missing. Args: #{args}"
+  end
+  
   protected
 
   def file_type_check(filename, ext, name)
@@ -366,10 +394,9 @@ class GenericSpreadsheet
       '.ods' => 'Openoffice.new',
       '.xls' => 'Excel.new',
       '.xlsx' => 'Excelx.new',
-      '.xml' => 'Excel2003.new'
     }
     case ext
-    when '.ods', '.xls', '.xlsx', '.xml'
+    when '.ods', '.xls', '.xlsx'
       correct_class = "use #{new_expression[ext]} to handle #{ext} spreadsheet files"
     else
       raise "unknown file type: #{ext}"
@@ -533,7 +560,7 @@ class GenericSpreadsheet
     ret=nil
     if zip.file.file? path
       # extract and return filename
-      @tmpdir = "#{RAILS_ROOT}/tmp/oo_"+$$.to_s
+      @tmpdir = "oo_"+$$.to_s
       unless File.exists?(@tmpdir)
         FileUtils::mkdir(@tmpdir)
       end
@@ -578,8 +605,8 @@ class GenericSpreadsheet
         if onecell == ""
           str << ''
         else
-          onecell.gsub!(/"/,'""')
-          str << ('"'+onecell+'"')
+          one = onecell.gsub(/"/,'""')
+          str << ('"'+one+'"')
         end
       when :float,:percentage
         if onecell == onecell.to_i
@@ -592,8 +619,8 @@ class GenericSpreadsheet
           if onecell == ""
             str << ''
           else
-            onecell.gsub!(/"/,'""')
-            str << '"'+onecell+'"'
+            one = onecell.gsub(/"/,'""')
+            str << '"'+one+'"'
           end
         elsif onecell.class == Float
           if onecell == onecell.to_i
@@ -617,7 +644,6 @@ class GenericSpreadsheet
 
   # converts an integer value to a time string like '02:05:06'
   def self.integer_to_timestring(content)
-    return content if String === content
     h = (content/3600.0).floor
     content = content - h*3600
     m = (content/60.0).floor

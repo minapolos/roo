@@ -1,9 +1,9 @@
-require 'xml'
+require 'rubygems'
 require 'fileutils'
 require 'zip/zipfilesystem'
 require 'date'
 require 'base64'
-require 'cgi'
+require 'nokogiri'
 
 class Openoffice < GenericSpreadsheet
 
@@ -36,7 +36,8 @@ class Openoffice < GenericSpreadsheet
       @file_nr = @@nr
       extract_content
       file = File.new(File.join(@tmpdir, @file_nr.to_s+"_roo_content.xml"))
-      @doc = XML::Parser.io(file).parse
+      #TODO: @doc = XML::Parser.io(file).parse
+      @doc = Nokogiri::XML(file)
       file.close
     ensure
       #if ENV["roo_local"] != "thomas-p"
@@ -55,6 +56,7 @@ class Openoffice < GenericSpreadsheet
     @style_defaults = Hash.new { |h,k| h[k] = [] }
     @style_definitions = Hash.new 
     @header_line = 1
+    @labels = {}
   end
 
   # creates a new empty openoffice-spreadsheet file
@@ -78,7 +80,8 @@ class Openoffice < GenericSpreadsheet
     read_cells(sheet) unless @cells_read[sheet]
     row,col = normalize(row,col)
     if celltype(row,col,sheet) == :date
-      yyyy,mm,dd = @cell[sheet][[row,col]].split('-')
+      #TODO: yyyy,mm,dd = @cell[sheet][[row,col]].split('-')
+      yyyy,mm,dd = @cell[sheet][[row,col]].to_s.split('-')
       return Date.new(yyyy.to_i,mm.to_i,dd.to_i)
     end
     @cell[sheet][[row,col]]
@@ -170,8 +173,10 @@ class Openoffice < GenericSpreadsheet
 
   def sheets
     return_sheets = []
-    @doc.find("//*[local-name()='table']").each do |sheet|
-      return_sheets << sheet.attributes['name']
+    #TODO: @doc.find("//*[local-name()='table']").each do |sheet|
+    @doc.xpath("//*[local-name()='table']").each do |sheet|
+      #TODO: return_sheets << sheet.attributes['name']
+      return_sheets << sheet['name']
     end
     return_sheets
   end
@@ -213,12 +218,29 @@ class Openoffice < GenericSpreadsheet
     theformulas
   end
 
+  # returns the row,col values of the labelled cell
+  # (nil,nil) if label is not defined
+  # sheet parameter is not really needed because label names are global
+  # to the whole spreadsheet
+  def label(labelname,sheet=nil)
+    sheet = @default_sheet unless sheet
+    read_cells(sheet) unless @cells_read[sheet]
+    if @labels.has_key? labelname
+      return @labels[labelname][1].to_i,
+        GenericSpreadsheet.letter_to_number(@labels[labelname][2]),
+        @labels[labelname][0]
+    else
+      return nil,nil,nil
+    end
+  end
+
   private
 
   # read the version of the OO-Version
   def oo_version
-    @doc.find("//*[local-name()='document-content']").each do |office|
-      @officeversion = office.attributes['version']
+    #TODO: @doc.find("//*[local-name()='document-content']").each do |office|
+    @doc.xpath("//*[local-name()='document-content']").each do |office|
+      @officeversion = office.attributes['version'].to_s
     end
   end
 
@@ -238,10 +260,11 @@ class Openoffice < GenericSpreadsheet
     when :string
       @cell[sheet][key] = str_v
     when :date
-      if table_cell.attributes['date-value'].size != "XXXX-XX-XX".size
+      #TODO: if table_cell.attributes['date-value'].size != "XXXX-XX-XX".size
+      if table_cell.attributes['date-value'].to_s.size != "XXXX-XX-XX".size
         #-- dann ist noch eine Uhrzeit vorhanden
         #-- "1961-11-21T12:17:18"
-        @cell[sheet][key] = DateTime.parse(table_cell.attributes['date-value'])
+        @cell[sheet][key] = DateTime.parse(table_cell.attributes['date-value'].to_s)
         @cell_type[sheet][key] = :datetime
       else
         @cell[sheet][key] = table_cell.attributes['date-value']
@@ -267,31 +290,59 @@ class Openoffice < GenericSpreadsheet
     raise ArgumentError, "Error: sheet '#{sheet||'nil'}' not valid" if @default_sheet == nil and sheet==nil
     raise RangeError unless self.sheets.include? sheet
 
-    @doc.find("//*[local-name()='table']").each do |ws|
-      if sheet == ws.attributes['name']
+    #-
+    # Labels
+    # should be factored out in separate method because labels are global
+    # to the whole spreadsheet file (and not to specific sheet)
+    #+
+    @doc.xpath("//table:named-range").each do |ne|
+      #-
+      # $Sheet1.$C$5
+      #+
+      name = ne.attribute('name').to_s
+      sheetname,coords = ne.attribute('cell-range-address').to_s.split('.')
+      col = coords.split('$')[1]
+      row = coords.split('$')[2]
+      sheetname = sheetname[1..-1] if sheetname[0,1] == '$'
+      @labels[name] = [sheetname,row,col]
+    end
+    
+    #TODO: @doc.find("//*[local-name()='table']").each do |ws|
+    @doc.xpath("//*[local-name()='table']").each do |ws|
+      #TODO: if sheet == ws.attributes['name']
+      if sheet == ws['name']
         sheet_found = true
         col = 1
         row = 1
-        ws.each_element do |table_element|
+        #TODO: ws.each_element do |table_element|
+        ws.children.each do |table_element|
           case table_element.name
           when 'table-column'
             @style_defaults[sheet] << table_element.attributes['default-cell-style-name'] 
           when 'table-row'
             if table_element.attributes['number-rows-repeated']
-              skip_row = table_element.attributes['number-rows-repeated'].to_i
+              #TODO: skip_row = table_element.attributes['number-rows-repeated'].to_i
+              skip_row = table_element.attributes['number-rows-repeated'].to_s.to_i
               row = row + skip_row - 1
             end
-            table_element.each_element do |cell|
-              skip_col = cell.attributes['number-columns-repeated']
-              formula = cell.attributes['formula']
-              vt = cell.attributes['value-type']
-              v =  cell.attributes['value']
-              style_name = cell.attributes['style-name']
+            #TODO: table_element.each_element do |cell|
+            table_element.children.each do |cell|
+              #TODO: skip_col = cell.attributes['number-columns-repeated']
+              skip_col = cell['number-columns-repeated']
+              #TODO: formula = cell.attributes['formula']
+              formula = cell['formula']
+              #TODO: vt = cell.attributes['value-type']
+              vt = cell['value-type']
+              #TODO: v =  cell.attributes['value']
+              v =  cell['value']
+              #TODO: style_name = cell.attributes['style-name']
+              style_name = cell['style-name']
               if vt == 'string'
                 str_v  = ''
                 # insert \n if there is more than one paragraph
                 para_count = 0
-                cell.each_element do |str|
+                #TODO: cell.each_element do |str|
+                cell.children.each do |str|
                   if str.name == 'p'
                     v = str.content
                     str_v += "\n" if para_count > 0
@@ -306,9 +357,10 @@ class Openoffice < GenericSpreadsheet
                     str_v.gsub!(/&apos;/,"'")  # special case not supported by unescapeHTML
                     str_v = CGI.unescapeHTML(str_v)
                   end # == 'p'
-                 end
+                end
               elsif vt == 'time'
-                cell.each_element do |str|
+                #TODO: cell.each_element do |str|
+                cell.children.each do |str|
                   if str.name == 'p'
                     v = str.content
                   end
@@ -322,8 +374,7 @@ class Openoffice < GenericSpreadsheet
               elsif vt == 'float'
                 #
               elsif vt == 'boolean'
-                v = cell.attributes['boolean-value']
-                #
+                v = cell.attributes['boolean-value'].to_s
               else
                 # raise "unknown type #{vt}"
               end
@@ -345,7 +396,8 @@ class Openoffice < GenericSpreadsheet
       end
     end
     
-    @doc.find("//*[local-name()='automatic-styles']").each do |style|
+    #TODO: @doc.find("//*[local-name()='automatic-styles']").each do |style|
+    @doc.xpath("//*[local-name()='automatic-styles']").each do |style|
       read_styles(style)
     end
     if !sheet_found
@@ -434,7 +486,7 @@ class Openoffice < GenericSpreadsheet
         result = result + child.content
       else
         if child.name == 's'
-          compressed_spaces = child.attributes['c'].to_i
+          compressed_spaces = child.attributes['c'].to_s.to_i
           # no explicit number means a count of 1:
           if compressed_spaces == 0
             compressed_spaces = 1
